@@ -9,6 +9,9 @@
 - [x] Align the visible brand, metadata, Open Graph, schema, robots, and sitemap
 - [x] Configure a static export for Cloudflare Pages with production response headers
 - [x] Document the GitHub-to-Cloudflare build and custom-domain settings
+- [x] Initialize the main branch and publish the source to the GitHub repository
+- [ ] Connect the GitHub repository to Cloudflare Pages and verify the production deployment
+- [ ] Bind voicetheline.live, validate HTTPS, and redirect www to the canonical apex domain
 - [x] Validate application build and local HTTP response
 - [ ] Validate desktop and mobile rendering with an available browser session
 - [ ] Validate microphone recording in a permitted browser context
