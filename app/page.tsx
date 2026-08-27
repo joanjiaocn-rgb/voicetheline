@@ -1,0 +1,118 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { Check, ChevronLeft, ChevronRight, Download, Headphones, Keyboard, Mic, MoreHorizontal, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, X } from "lucide-react";
+
+type Line = { time: number; speaker: string; text: string };
+type Scene = { title: string; genre: string; duration: number; image: string; positioning: string; lines: Line[] };
+
+const scenes: Scene[] = [
+  { title: "Last Train Home", genre: "Late-night drama", duration: 22, image: "/scenes/last-train-home.png", positioning: "center 58%", lines: [{ time: 1, speaker: "MAYA", text: "You came all this way just to say goodbye?" }, { time: 7, speaker: "LEO", text: "No. I came to see if you'd stay." }, { time: 14, speaker: "MAYA", text: "The train leaves in eight minutes." }, { time: 18, speaker: "LEO", text: "Then let's make those eight count." }] },
+  { title: "Rainy Confession", genre: "Romantic drama", duration: 23, image: "/scenes/rainy-confession.png", positioning: "center 52%", lines: [{ time: 1, speaker: "ELLIS", text: "I thought the rain might change your mind." }, { time: 7, speaker: "MARA", text: "It only made the walk here longer." }, { time: 13, speaker: "ELLIS", text: "Then tell me I came too late." }, { time: 18, speaker: "MARA", text: "You came before I stopped waiting." }] },
+  { title: "The Big Pitch", genre: "Office comedy", duration: 19, image: "/scenes/the-big-pitch.png", positioning: "center", lines: [{ time: 1, speaker: "JUNE", text: "This is either brilliant or career-ending." }, { time: 6, speaker: "SAM", text: "Those are the only two kinds of Tuesdays." }, { time: 11, speaker: "JUNE", text: "You brought the prototype, right?" }, { time: 15, speaker: "SAM", text: "I brought something better. A backup prototype." }] },
+  { title: "Planet Nine", genre: "Cosmic adventure", duration: 20, image: "/scenes/planet-nine.png", positioning: "center", lines: [{ time: 1, speaker: "CAPTAIN", text: "Signal lock. We have one chance." }, { time: 6, speaker: "NOVA", text: "One chance is more than we had yesterday." }, { time: 12, speaker: "CAPTAIN", text: "On my mark, wake the stars." }, { time: 17, speaker: "NOVA", text: "Already ahead of you." }] },
+  { title: "Between Floors", genre: "Contained mystery", duration: 21, image: "/scenes/between-floors.png", positioning: "center", lines: [{ time: 1, speaker: "NORA", text: "Did the elevator just sigh?" }, { time: 6, speaker: "ELI", text: "Old buildings make old noises." }, { time: 11, speaker: "NORA", text: "That one said my name." }, { time: 16, speaker: "ELI", text: "Then maybe we should answer." }] },
+  { title: "The Last Signal", genre: "Coastal mystery", duration: 24, image: "/scenes/the-last-signal.png", positioning: "center", lines: [{ time: 1, speaker: "ROWAN", text: "The signal is back, same time as before." }, { time: 7, speaker: "INEZ", text: "There is no ship on that frequency." }, { time: 13, speaker: "ROWAN", text: "Then who keeps asking for the lighthouse?" }, { time: 19, speaker: "INEZ", text: "Someone who never saw it go dark." }] },
+  { title: "Magic Mistake", genre: "Fantasy comedy", duration: 21, image: "/scenes/magic-mistake.png", positioning: "center", lines: [{ time: 1, speaker: "PIP", text: "Good news: the spell definitely worked." }, { time: 6, speaker: "ADA", text: "The ceiling is wearing my bookshelf." }, { time: 11, speaker: "PIP", text: "That sounds more like medium news." }, { time: 16, speaker: "ADA", text: "Put gravity back before the tea notices." }] },
+  { title: "Rooftop After Hours", genre: "Quiet drama", duration: 22, image: "/scenes/rooftop-after-hours.png", positioning: "center 55%", lines: [{ time: 1, speaker: "DEV", text: "Everyone looks honest from this far away." }, { time: 7, speaker: "REN", text: "Distance is generous like that." }, { time: 13, speaker: "DEV", text: "Do you ever miss who we were?" }, { time: 18, speaker: "REN", text: "Only when I forget who we became." }] },
+];
+
+const formatTime = (seconds: number) => `00:${Math.max(0, Math.floor(seconds)).toString().padStart(2, "0")}`;
+
+export default function Home() {
+  const [sceneIndex, setSceneIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playhead, setPlayhead] = useState(0);
+  const [recording, setRecording] = useState(false);
+  const [recordingStatus, setRecordingStatus] = useState<"idle" | "recording" | "done" | "error">("idle");
+  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
+  const [take, setTake] = useState(1);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const scene = scenes[sceneIndex];
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const startedAt = Date.now() - playhead * 1000;
+    const timer = window.setInterval(() => {
+      const next = (Date.now() - startedAt) / 1000;
+      if (next >= scene.duration) { setPlayhead(scene.duration); setIsPlaying(false); } else setPlayhead(next);
+    }, 60);
+    return () => window.clearInterval(timer);
+  }, [isPlaying, playhead, scene.duration]);
+
+  useEffect(() => {
+    if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    setIsPlaying(false); setPlayhead(0); setRecording(false);
+    if (recordingUrl) URL.revokeObjectURL(recordingUrl);
+    setRecordingUrl(null); setRecordingStatus("idle"); setTake(1);
+    // Changing scenes starts a fresh local take.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sceneIndex]);
+
+  useEffect(() => () => { streamRef.current?.getTracks().forEach((track) => track.stop()); if (recordingUrl) URL.revokeObjectURL(recordingUrl); }, [recordingUrl]);
+
+  const stopRecording = useCallback(() => { if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop(); setRecording(false); }, []);
+  const togglePlayback = () => { if (playhead >= scene.duration) setPlayhead(0); setIsPlaying((value) => !value); };
+
+  const startRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { setRecordingStatus("error"); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream; chunksRef.current = [];
+      if (recordingUrl) URL.revokeObjectURL(recordingUrl);
+      setRecordingUrl(null);
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      recorder.ondataavailable = (event) => event.data.size && chunksRef.current.push(event.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        setRecordingUrl(URL.createObjectURL(blob)); stream.getTracks().forEach((track) => track.stop()); setRecordingStatus("done");
+      };
+      recorder.start(); setRecording(true); setRecordingStatus("recording"); setPlayhead(0); setIsPlaying(true);
+    } catch { setRecordingStatus("error"); }
+  };
+
+  const resetTake = () => { stopRecording(); setIsPlaying(false); setPlayhead(0); if (recordingUrl) URL.revokeObjectURL(recordingUrl); setRecordingUrl(null); setRecordingStatus("idle"); setTake((value) => value + 1); };
+  const downloadTake = () => { if (!recordingUrl) return; const link = document.createElement("a"); link.href = recordingUrl; link.download = `cue-${scene.title.toLowerCase().replaceAll(" ", "-")}-take-${take}.webm`; link.click(); };
+  const activeLine = scene.lines.reduce((current, line, index) => playhead >= line.time ? index : current, -1);
+  const upcomingLine = scene.lines[Math.min(activeLine + 1, scene.lines.length - 1)];
+  const progress = (playhead / scene.duration) * 100;
+  const statusLabel = recordingStatus === "done" ? "Take saved" : recordingStatus === "error" ? "Mic blocked" : recording ? "Live recording" : "Ready to record";
+
+  return <main className="studio-shell">
+    <header className="studio-header">
+      <a className="wordmark" href="#studio" aria-label="Voice the Line home"><span className="wordmark-mark">V</span><h1>VOICE THE LINE</h1><b>CUE STUDIO</b></a>
+      <div className="header-center"><span className="status-light" /> Eight original scenes <span className="header-rule" /> Recorded locally</div>
+      <div className="header-actions"><button className="header-icon" onClick={() => setMuted((value) => !value)} title={muted ? "Turn sound on" : "Turn sound off"} aria-label={muted ? "Turn sound on" : "Turn sound off"}>{muted ? <X size={17} /> : <Volume2 size={17} />}</button><button className="header-icon" title="Studio settings" aria-label="Studio settings"><SlidersHorizontal size={17} /></button></div>
+    </header>
+    <div className="studio-layout" id="studio">
+      <aside className="scene-drawer" aria-label="Scene library">
+        <div className="drawer-title"><span>Scene library</span><button title="More scene options" aria-label="More scene options"><MoreHorizontal size={18} /></button></div><p className="drawer-subtitle">Original scenes for a clean take.</p>
+        <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => setSceneIndex(index)}><Image src={item.image} alt="" fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
+        <div className="drawer-note"><Headphones size={16} /><span>Headphones recommended</span></div>
+      </aside>
+      <section className="monitor-area">
+        <div className="monitor-meta"><span>Scene {String(sceneIndex + 1).padStart(2, "0")} / {String(scenes.length).padStart(2, "0")}</span><span>{scene.genre}</span></div>
+        <div className="cinema-frame">
+          <Image key={scene.image} className="scene-image" src={scene.image} alt={`${scene.title} scene`} fill priority={sceneIndex === 0} sizes="(max-width: 820px) 100vw, (max-width: 1140px) 55vw, 65vw" style={{ objectPosition: scene.positioning }} /><div className="cinema-glow" /><div className="safe-frame" aria-hidden="true"><i /><i /><i /><i /></div>
+          <div className="scene-id"><span>Original short</span><h2>{scene.title}</h2></div><div className="on-air"><span className={recording ? "pulse" : ""} /> {recording ? "REC" : "CUE"}</div>
+          <div className="caption-block"><span>{activeLine >= 0 ? scene.lines[activeLine].speaker : "STANDBY"}</span><p>{activeLine >= 0 ? scene.lines[activeLine].text : "Press play, then give the scene your voice."}</p></div>
+        </div>
+        <div className="transport"><button className="transport-play" onClick={togglePlayback} aria-label={isPlaying ? "Pause scene" : "Play scene"}>{isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}</button><span className="mono-time">{formatTime(playhead)}</span><div className="time-track"><input aria-label="Scene timeline" type="range" min="0" max={scene.duration} step="0.1" value={playhead} onChange={(event) => setPlayhead(Number(event.target.value))} style={{ "--timeline-progress": `${progress}%` } as React.CSSProperties} /><div className="time-markers"><span>00</span><span>05</span><span>10</span><span>15</span><span>20</span></div></div><span className="mono-time">{formatTime(scene.duration)}</span><button className="transport-reset" onClick={() => { setPlayhead(0); setIsPlaying(false); }} title="Restart scene" aria-label="Restart scene"><RotateCcw size={17} /></button></div>
+      </section>
+      <aside className="direction-panel">
+        <div className="direction-header"><div><span className="panel-kicker">Your direction</span><h2>Find the moment.</h2></div><button className="header-icon" title="Direction notes" aria-label="Direction notes"><Keyboard size={16} /></button></div>
+        <div className="cue-now"><div className="cue-label-row"><span>Now cueing</span><time>{activeLine >= 0 ? formatTime(scene.lines[activeLine].time) : "00:00"}</time></div><strong>{activeLine >= 0 ? scene.lines[activeLine].speaker : "Get ready"}</strong><p>{activeLine >= 0 ? scene.lines[activeLine].text : "The first line lands in one second."}</p></div>
+        <div className="script-list" aria-label="Script lines">{scene.lines.map((line, index) => <article key={`${line.speaker}-${line.time}`} className={`script-row ${activeLine === index ? "current" : ""} ${activeLine > index ? "complete" : ""}`}><time>{formatTime(line.time)}</time><div><span>{line.speaker}</span><p>{line.text}</p></div>{activeLine > index && <Check size={15} />}</article>)}</div>
+        <div className={`take-console ${recordingStatus}`}><div className="take-topline"><span className="take-status"><i /> {statusLabel}</span><span>Take {take}</span></div><div className="take-action-row">{recording ? <button className="record-control stop" onClick={stopRecording} aria-label="Stop recording"><i /></button> : <button className="record-control" onClick={startRecording} aria-label="Start recording"><Mic size={23} /></button>}<div className="take-copy"><strong>{recording ? "Keep your pace." : recordingStatus === "done" ? "That is a wrap." : "Start a clean take."}</strong><span>{recording ? "Recording to this device" : recordingStatus === "done" ? "Listen or export below" : `Next: ${upcomingLine.speaker}`}</span></div></div><div className="audio-strip" aria-hidden="true">{Array.from({ length: 15 }, (_, index) => <i key={index} />)}</div>{recordingUrl && <div className="take-finish"><audio ref={audioRef} src={recordingUrl} /><button onClick={() => audioRef.current?.play()}><Play size={15} fill="currentColor" /> Listen</button><button onClick={downloadTake}><Download size={15} /> Export</button></div>}<button className="new-take" onClick={resetTake}><RotateCcw size={14} /> New take</button></div>
+      </aside>
+    </div>
+    <footer className="mobile-scene-nav"><button onClick={() => setSceneIndex((sceneIndex + scenes.length - 1) % scenes.length)} aria-label="Previous scene"><ChevronLeft size={19} /></button><span>Scene {sceneIndex + 1} of {scenes.length}</span><button onClick={() => setSceneIndex((sceneIndex + 1) % scenes.length)} aria-label="Next scene"><ChevronRight size={19} /></button></footer>
+  </main>;
+}
