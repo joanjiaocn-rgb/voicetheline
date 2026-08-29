@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Check, ChevronLeft, ChevronRight, Download, Headphones, Keyboard, Mic, MoreHorizontal, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, X } from "lucide-react";
+import { scenes } from "../lib/scenes";
 
-type Line = { time: number; speaker: string; text: string };
-type Scene = { title: string; genre: string; duration: number; image: string; positioning: string; lines: Line[] };
 type FaqItem = { question: string; answer: string };
 
 const faqItems: FaqItem[] = [
@@ -47,17 +46,6 @@ const structuredData = [
   },
 ];
 
-const scenes: Scene[] = [
-  { title: "Last Train Home", genre: "Late-night drama", duration: 22, image: "/scenes/last-train-home.png", positioning: "center 58%", lines: [{ time: 1, speaker: "MAYA", text: "You came all this way just to say goodbye?" }, { time: 7, speaker: "LEO", text: "No. I came to see if you'd stay." }, { time: 14, speaker: "MAYA", text: "The train leaves in eight minutes." }, { time: 18, speaker: "LEO", text: "Then let's make those eight count." }] },
-  { title: "Rainy Confession", genre: "Romantic drama", duration: 23, image: "/scenes/rainy-confession.png", positioning: "center 52%", lines: [{ time: 1, speaker: "ELLIS", text: "I thought the rain might change your mind." }, { time: 7, speaker: "MARA", text: "It only made the walk here longer." }, { time: 13, speaker: "ELLIS", text: "Then tell me I came too late." }, { time: 18, speaker: "MARA", text: "You came before I stopped waiting." }] },
-  { title: "The Big Pitch", genre: "Office comedy", duration: 19, image: "/scenes/the-big-pitch.png", positioning: "center", lines: [{ time: 1, speaker: "JUNE", text: "This is either brilliant or career-ending." }, { time: 6, speaker: "SAM", text: "Those are the only two kinds of Tuesdays." }, { time: 11, speaker: "JUNE", text: "You brought the prototype, right?" }, { time: 15, speaker: "SAM", text: "I brought something better. A backup prototype." }] },
-  { title: "Planet Nine", genre: "Cosmic adventure", duration: 20, image: "/scenes/planet-nine.png", positioning: "center", lines: [{ time: 1, speaker: "CAPTAIN", text: "Signal lock. We have one chance." }, { time: 6, speaker: "NOVA", text: "One chance is more than we had yesterday." }, { time: 12, speaker: "CAPTAIN", text: "On my mark, wake the stars." }, { time: 17, speaker: "NOVA", text: "Already ahead of you." }] },
-  { title: "Between Floors", genre: "Contained mystery", duration: 21, image: "/scenes/between-floors.png", positioning: "center", lines: [{ time: 1, speaker: "NORA", text: "Did the elevator just sigh?" }, { time: 6, speaker: "ELI", text: "Old buildings make old noises." }, { time: 11, speaker: "NORA", text: "That one said my name." }, { time: 16, speaker: "ELI", text: "Then maybe we should answer." }] },
-  { title: "The Last Signal", genre: "Coastal mystery", duration: 24, image: "/scenes/the-last-signal.png", positioning: "center", lines: [{ time: 1, speaker: "ROWAN", text: "The signal is back, same time as before." }, { time: 7, speaker: "INEZ", text: "There is no ship on that frequency." }, { time: 13, speaker: "ROWAN", text: "Then who keeps asking for the lighthouse?" }, { time: 19, speaker: "INEZ", text: "Someone who never saw it go dark." }] },
-  { title: "Magic Mistake", genre: "Fantasy comedy", duration: 21, image: "/scenes/magic-mistake.png", positioning: "center", lines: [{ time: 1, speaker: "PIP", text: "Good news: the spell definitely worked." }, { time: 6, speaker: "ADA", text: "The ceiling is wearing my bookshelf." }, { time: 11, speaker: "PIP", text: "That sounds more like medium news." }, { time: 16, speaker: "ADA", text: "Put gravity back before the tea notices." }] },
-  { title: "Rooftop After Hours", genre: "Quiet drama", duration: 22, image: "/scenes/rooftop-after-hours.png", positioning: "center 55%", lines: [{ time: 1, speaker: "DEV", text: "Everyone looks honest from this far away." }, { time: 7, speaker: "REN", text: "Distance is generous like that." }, { time: 13, speaker: "DEV", text: "Do you ever miss who we were?" }, { time: 18, speaker: "REN", text: "Only when I forget who we became." }] },
-];
-
 const formatTime = (seconds: number) => `00:${Math.max(0, Math.floor(seconds)).toString().padStart(2, "0")}`;
 
 export default function Home() {
@@ -74,6 +62,12 @@ export default function Home() {
   const chunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const scene = scenes[sceneIndex];
+
+  useEffect(() => {
+    const requestedSlug = new URLSearchParams(window.location.search).get("scene");
+    const requestedIndex = scenes.findIndex((item) => item.slug === requestedSlug);
+    if (requestedIndex >= 0) setSceneIndex(requestedIndex);
+  }, []);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -135,6 +129,7 @@ export default function Home() {
       <aside className="scene-drawer" aria-label="Scene library">
         <div className="drawer-title"><span>Scene library</span><button title="More scene options" aria-label="More scene options"><MoreHorizontal size={18} /></button></div><p className="drawer-subtitle">Original scenes for a clean take.</p>
         <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => setSceneIndex(index)}><Image src={item.image} alt="" fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
+        <a className="drawer-guide-link" href="/voice-over-game/">Read the voice over game guide <span aria-hidden="true">↗</span></a>
         <div className="drawer-note"><Headphones size={16} /><span>Headphones recommended</span></div>
       </aside>
       <section className="monitor-area">
@@ -166,6 +161,8 @@ export default function Home() {
           <article><span>02</span><h3>Catch the cue</h3><p>Timed dialogue keeps the performance moving while the active line stays visible on the monitor.</p></article>
           <article><span>03</span><h3>Keep the take</h3><p>Record in your browser, listen back, try again, and export your finished take locally.</p></article>
         </div>
+        <div className="seo-scene-heading"><div><span className="section-kicker">Original scene library</span><h2>Pick your next voice over scene</h2></div><a className="text-link" href="/voice-over-game/">See how the game works <span aria-hidden="true">↗</span></a></div>
+        <div className="seo-scene-grid">{scenes.map((item) => <a className="seo-scene-link" href={`/scenes/${item.slug}/`} key={item.slug}><Image src={item.image} alt={`${item.title} voice over scene`} width={420} height={236} /><span><strong>{item.title}</strong><small>{item.genre} · {formatTime(item.duration)}</small></span></a>)}</div>
       </div>
     </section>
     <section className="faq-section" aria-labelledby="faq-title">
