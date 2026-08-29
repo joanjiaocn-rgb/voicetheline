@@ -6,6 +6,46 @@ import { Check, ChevronLeft, ChevronRight, Download, Headphones, Keyboard, Mic, 
 
 type Line = { time: number; speaker: string; text: string };
 type Scene = { title: string; genre: string; duration: number; image: string; positioning: string; lines: Line[] };
+type FaqItem = { question: string; answer: string };
+
+const faqItems: FaqItem[] = [
+  { question: "What is Voice the Line?", answer: "Voice the Line is a free online voice over game where you perform dialogue from original cinematic scenes." },
+  { question: "Do I need an account to play?", answer: "No. You can choose a scene, follow the timed cues, and record a take without creating an account." },
+  { question: "Where is my voice recording stored?", answer: "Your recording stays in your browser while you use the site. It is not uploaded to a server, and you can export it as a WebM file." },
+  { question: "Can I use Voice the Line to practice voice acting?", answer: "Yes. The timed script, character lines, retakes, and local playback make it useful for casual voice acting practice." },
+];
+
+const structuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Voice the Line",
+    url: "https://voicetheline.live",
+    description: "A free online voice over game with original cinematic scenes and local recording.",
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Voice the Line",
+    url: "https://voicetheline.live",
+    description: "Perform original cinematic scenes, follow timed dialogue cues, record your voice locally, replay every take, and export it free in your browser.",
+    applicationCategory: "GameApplication",
+    operatingSystem: "Any web browser",
+    browserRequirements: "Requires microphone permission for recording",
+    featureList: ["Timed dialogue cues", "Local browser recording", "Take playback", "WebM export"],
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  },
+];
 
 const scenes: Scene[] = [
   { title: "Last Train Home", genre: "Late-night drama", duration: 22, image: "/scenes/last-train-home.png", positioning: "center 58%", lines: [{ time: 1, speaker: "MAYA", text: "You came all this way just to say goodbye?" }, { time: 7, speaker: "LEO", text: "No. I came to see if you'd stay." }, { time: 14, speaker: "MAYA", text: "The train leaves in eight minutes." }, { time: 18, speaker: "LEO", text: "Then let's make those eight count." }] },
@@ -87,7 +127,7 @@ export default function Home() {
 
   return <main className="studio-shell">
     <header className="studio-header">
-      <a className="wordmark" href="#studio" aria-label="Voice the Line home"><span className="wordmark-mark">V</span><h1>VOICE THE LINE</h1><b>CUE STUDIO</b></a>
+      <a className="wordmark" href="#studio" aria-label="Voice the Line home"><span className="wordmark-mark">V</span><span className="wordmark-name">VOICE THE LINE</span><b>CUE STUDIO</b></a>
       <div className="header-center"><span className="status-light" /> Eight original scenes <span className="header-rule" /> Recorded locally</div>
       <div className="header-actions"><button className="header-icon" onClick={() => setMuted((value) => !value)} title={muted ? "Turn sound on" : "Turn sound off"} aria-label={muted ? "Turn sound on" : "Turn sound off"}>{muted ? <X size={17} /> : <Volume2 size={17} />}</button><button className="header-icon" title="Studio settings" aria-label="Studio settings"><SlidersHorizontal size={17} /></button></div>
     </header>
@@ -114,5 +154,30 @@ export default function Home() {
       </aside>
     </div>
     <footer className="mobile-scene-nav"><button onClick={() => setSceneIndex((sceneIndex + scenes.length - 1) % scenes.length)} aria-label="Previous scene"><ChevronLeft size={19} /></button><span>Scene {sceneIndex + 1} of {scenes.length}</span><button onClick={() => setSceneIndex((sceneIndex + 1) % scenes.length)} aria-label="Next scene"><ChevronRight size={19} /></button></footer>
+    <section className="seo-content" aria-labelledby="about-title">
+      <div className="seo-content-inner">
+        <div className="seo-lede">
+          <span className="section-kicker">Voice acting practice</span>
+          <h1 id="about-title">Voice the Line: a free online voice over game</h1>
+          <p>Voice the Line is a free online voice over game built around short, original cinematic scenes. Pick a moment, follow the cue, and give the character a voice that feels like your own.</p>
+        </div>
+        <div className="seo-points">
+          <article><span>01</span><h3>Choose a scene</h3><p>Move between drama, mystery, comedy, fantasy, and science fiction scenes in one focused studio.</p></article>
+          <article><span>02</span><h3>Catch the cue</h3><p>Timed dialogue keeps the performance moving while the active line stays visible on the monitor.</p></article>
+          <article><span>03</span><h3>Keep the take</h3><p>Record in your browser, listen back, try again, and export your finished take locally.</p></article>
+        </div>
+      </div>
+    </section>
+    <section className="faq-section" aria-labelledby="faq-title">
+      <div className="faq-inner">
+        <div><span className="section-kicker">Common questions</span><h2 id="faq-title">Voice over game FAQ</h2></div>
+        <div className="faq-list">{faqItems.map((item) => <details key={item.question}><summary>{item.question}</summary><p>{item.answer}</p></details>)}</div>
+      </div>
+    </section>
+    <footer className="site-footer">
+      <div><strong>VOICE THE LINE</strong><span>Original scenes for your next take.</span></div>
+      <nav aria-label="Footer navigation"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>
+    </footer>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replaceAll("<", "\\u003c") }} />
   </main>;
 }
