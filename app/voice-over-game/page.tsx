@@ -104,7 +104,7 @@ export default function VoiceOverGameGuide() {
 
       <section className="guide-section guide-section-alt" id="scene-library" aria-labelledby="scene-library-title">
         <div className="guide-section-heading guide-section-heading-row"><div><span className="section-kicker">Original scene library</span><h2 id="scene-library-title">Find a scene that fits your voice</h2><p>Each scene is short enough for a quick take and specific enough to give you something to play.</p></div><a className="text-link" href="/#studio">Open the studio <span aria-hidden="true">-&gt;</span></a></div>
-        <div className="guide-scene-grid">{scenes.map((scene) => <a className="guide-scene-card" href={`/scenes/${scene.slug}/`} key={scene.slug}><div className="guide-scene-image"><Image src={scene.image} alt={`${scene.title} voice over scene`} fill sizes="(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 25vw" /></div><div className="guide-scene-copy"><span>{scene.genre}</span><strong>{scene.title}</strong><small>{scene.duration} seconds · View scene details -&gt;</small></div></a>)}</div>
+        <div className="guide-scene-grid">{scenes.map((scene) => <a className="guide-scene-card" href={`/scenes/${scene.slug}/`} key={scene.slug}><div className="guide-scene-image"><Image src={scene.image} alt={`${scene.title} voice over scene`} fill sizes="(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 25vw" /></div><div className="guide-scene-copy"><span>{scene.genre}</span><strong>{scene.title}</strong><small>{scene.duration} seconds / View scene details -&gt;</small></div></a>)}</div>
       </section>
 
       <section className="guide-section guide-faq" aria-labelledby="guide-faq-title">

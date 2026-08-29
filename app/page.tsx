@@ -129,7 +129,7 @@ export default function Home() {
       <aside className="scene-drawer" aria-label="Scene library">
         <div className="drawer-title"><span>Scene library</span><button title="More scene options" aria-label="More scene options"><MoreHorizontal size={18} /></button></div><p className="drawer-subtitle">Original scenes for a clean take.</p>
         <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => setSceneIndex(index)}><Image src={item.image} alt="" fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
-        <a className="drawer-guide-link" href="/voice-over-game/">Read the voice over game guide <span aria-hidden="true">↗</span></a>
+        <a className="drawer-guide-link" href="/voice-over-game/">Read the voice over game guide <span aria-hidden="true">-&gt;</span></a>
         <div className="drawer-note"><Headphones size={16} /><span>Headphones recommended</span></div>
       </aside>
       <section className="monitor-area">
@@ -161,8 +161,8 @@ export default function Home() {
           <article><span>02</span><h3>Catch the cue</h3><p>Timed dialogue keeps the performance moving while the active line stays visible on the monitor.</p></article>
           <article><span>03</span><h3>Keep the take</h3><p>Record in your browser, listen back, try again, and export your finished take locally.</p></article>
         </div>
-        <div className="seo-scene-heading"><div><span className="section-kicker">Original scene library</span><h2>Pick your next voice over scene</h2></div><a className="text-link" href="/voice-over-game/">See how the game works <span aria-hidden="true">↗</span></a></div>
-        <div className="seo-scene-grid">{scenes.map((item) => <a className="seo-scene-link" href={`/scenes/${item.slug}/`} key={item.slug}><Image src={item.image} alt={`${item.title} voice over scene`} width={420} height={236} /><span><strong>{item.title}</strong><small>{item.genre} · {formatTime(item.duration)}</small></span></a>)}</div>
+        <div className="seo-scene-heading"><div><span className="section-kicker">Original scene library</span><h2>Pick your next voice over scene</h2></div><a className="text-link" href="/voice-over-game/">See how the game works <span aria-hidden="true">-&gt;</span></a></div>
+        <div className="seo-scene-grid">{scenes.map((item) => <a className="seo-scene-link" href={`/scenes/${item.slug}/`} key={item.slug}><Image src={item.image} alt={`${item.title} voice over scene`} width={420} height={236} /><span><strong>{item.title}</strong><small>{item.genre} / {formatTime(item.duration)}</small></span></a>)}</div>
       </div>
     </section>
     <section className="faq-section" aria-labelledby="faq-title">
