@@ -11,8 +11,8 @@
 - [x] Document the GitHub-to-Cloudflare build and custom-domain settings
 - [x] Add crawlable product context, FAQ schema, favicon, manifest, privacy, and terms routes
 - [x] Initialize the main branch and publish the source to the GitHub repository
-- [ ] Connect the GitHub repository to Cloudflare Pages and verify the production deployment
-- [ ] Bind voicetheline.live, validate HTTPS, and redirect www to the canonical apex domain
+- [x] Connect the GitHub repository to Cloudflare Pages and verify the production deployment
+- [x] Bind voicetheline.live, validate HTTPS, and redirect www to the canonical apex domain
 - [x] Validate application build and local HTTP response
 - [ ] Validate desktop and mobile rendering with an available browser session
 - [ ] Validate microphone recording in a permitted browser context
