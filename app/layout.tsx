@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
-import AnalyticsConsent from "./components/analytics-consent";
 import { GA_MEASUREMENT_ID } from "../lib/analytics";
 
 const siteUrl = "https://voicetheline.live";
@@ -53,17 +52,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         {children}
-        <Script id="google-analytics-consent" strategy="beforeInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-window.gtag = function(){window.dataLayer.push(arguments);};
-window.gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', wait_for_update: 500 });`}
-        </Script>
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
         <Script id="google-analytics-config" strategy="afterInteractive">
-          {`window.gtag('js', new Date());
-window.gtag('config', '${GA_MEASUREMENT_ID}', { anonymize_ip: true, send_page_view: false });`}
+          {`window.dataLayer = window.dataLayer || [];
+window.gtag = function(){window.dataLayer.push(arguments);};
+window.gtag('js', new Date());
+window.gtag('config', '${GA_MEASUREMENT_ID}', { anonymize_ip: true, allow_google_signals: false, allow_ad_personalization_signals: false });`}
         </Script>
-        <AnalyticsConsent />
       </body>
     </html>
   );
