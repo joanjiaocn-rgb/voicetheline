@@ -22,10 +22,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   icons: {
     icon: [
-      { url: "/favicon.png", type: "image/png", sizes: "192x192" },
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico?v=3", type: "image/x-icon", sizes: "32x32" },
+      { url: "/favicon.png?v=3", type: "image/png", sizes: "192x192" },
     ],
-    shortcut: "/favicon.png",
+    shortcut: "/favicon.ico?v=3",
   },
   openGraph: {
     type: "website",
