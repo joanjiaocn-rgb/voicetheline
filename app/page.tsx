@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Check, ChevronLeft, ChevronRight, Download, Headphones, Keyboard, Mic, MoreHorizontal, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, X } from "lucide-react";
 import { scenes } from "../lib/scenes";
+import { trackEvent } from "../lib/analytics";
 
 type FaqItem = { question: string; answer: string };
 
@@ -92,7 +93,7 @@ export default function Home() {
   useEffect(() => () => { streamRef.current?.getTracks().forEach((track) => track.stop()); if (recordingUrl) URL.revokeObjectURL(recordingUrl); }, [recordingUrl]);
 
   const stopRecording = useCallback(() => { if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop(); setRecording(false); }, []);
-  const togglePlayback = () => { if (playhead >= scene.duration) setPlayhead(0); setIsPlaying((value) => !value); };
+  const togglePlayback = () => { if (playhead >= scene.duration) setPlayhead(0); setIsPlaying((value) => { if (!value) trackEvent("play_scene", { scene_name: scene.title }); return !value; }); };
 
   const startRecording = async () => {
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { setRecordingStatus("error"); return; }
@@ -108,12 +109,12 @@ export default function Home() {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setRecordingUrl(URL.createObjectURL(blob)); stream.getTracks().forEach((track) => track.stop()); setRecordingStatus("done");
       };
-      recorder.start(); setRecording(true); setRecordingStatus("recording"); setPlayhead(0); setIsPlaying(true);
+      recorder.start(); trackEvent("start_recording", { scene_name: scene.title }); setRecording(true); setRecordingStatus("recording"); setPlayhead(0); setIsPlaying(true);
     } catch { setRecordingStatus("error"); }
   };
 
   const resetTake = () => { stopRecording(); setIsPlaying(false); setPlayhead(0); if (recordingUrl) URL.revokeObjectURL(recordingUrl); setRecordingUrl(null); setRecordingStatus("idle"); setTake((value) => value + 1); };
-  const downloadTake = () => { if (!recordingUrl) return; const link = document.createElement("a"); link.href = recordingUrl; link.download = `cue-${scene.title.toLowerCase().replaceAll(" ", "-")}-take-${take}.webm`; link.click(); };
+  const downloadTake = () => { if (!recordingUrl) return; trackEvent("export_take", { scene_name: scene.title, take_number: take }); const link = document.createElement("a"); link.href = recordingUrl; link.download = `cue-${scene.title.toLowerCase().replaceAll(" ", "-")}-take-${take}.webm`; link.click(); };
   const activeLine = scene.lines.reduce((current, line, index) => playhead >= line.time ? index : current, -1);
   const upcomingLine = scene.lines[Math.min(activeLine + 1, scene.lines.length - 1)];
   const progress = (playhead / scene.duration) * 100;
@@ -128,7 +129,7 @@ export default function Home() {
     <div className="studio-layout" id="studio">
       <aside className="scene-drawer" aria-label="Scene library">
         <div className="drawer-title"><span>Scene library</span><button title="More scene options" aria-label="More scene options"><MoreHorizontal size={18} /></button></div><p className="drawer-subtitle">Original scenes for a clean take.</p>
-        <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => setSceneIndex(index)}><Image src={item.image} alt="" fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
+        <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => { trackEvent("select_scene", { scene_name: item.title, scene_index: index + 1 }); setSceneIndex(index); }}><Image src={item.image} alt="" fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
         <a className="drawer-guide-link" href="/voice-over-game/">Read the voice over game guide <span aria-hidden="true">-&gt;</span></a>
         <div className="drawer-note"><Headphones size={16} /><span>Headphones recommended</span></div>
       </aside>

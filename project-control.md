@@ -10,6 +10,7 @@
 - [x] Configure a static export for Cloudflare Pages with production response headers
 - [x] Document the GitHub-to-Cloudflare build and custom-domain settings
 - [x] Add crawlable product context, FAQ schema, favicon, manifest, privacy, and terms routes
+- [x] Add GA4 measurement with consent mode and core product events
 - [x] Initialize the main branch and publish the source to the GitHub repository
 - [x] Connect the GitHub repository to Cloudflare Pages and verify the production deployment
 - [x] Bind voicetheline.live, validate HTTPS, and redirect www to the canonical apex domain
