@@ -15,7 +15,36 @@ const faqItems: FaqItem[] = [
   { question: "Can I use Voice the Line to practice voice acting?", answer: "Yes. The timed script, character lines, retakes, and local playback make it useful for casual voice acting practice." },
 ];
 
+const siteOwner = {
+  name: "Joan Jiao",
+  profileUrl: "https://github.com/joanjiaocn-rgb",
+  repositoryUrl: "https://github.com/joanjiaocn-rgb/voicetheline",
+  contactUrl: "https://github.com/joanjiaocn-rgb/voicetheline/issues",
+};
+
 const structuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Voice the Line",
+    url: "https://voicetheline.live",
+    founder: { "@type": "Person", name: siteOwner.name, url: siteOwner.profileUrl },
+    sameAs: [siteOwner.repositoryUrl, siteOwner.profileUrl],
+    contactPoint: { "@type": "ContactPoint", contactType: "customer support", url: siteOwner.contactUrl },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "Voice the Line | Free Online Voice Over Game",
+    url: "https://voicetheline.live",
+    author: { "@type": "Person", name: siteOwner.name, url: siteOwner.profileUrl },
+    datePublished: "2026-08-27",
+    dateModified: "2026-09-04",
+    citation: [
+      "https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder",
+      "https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia",
+    ],
+  },
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -121,16 +150,16 @@ export default function Home() {
   const statusLabel = recordingStatus === "done" ? "Take saved" : recordingStatus === "error" ? "Mic blocked" : recording ? "Live recording" : "Ready to record";
 
   return <main className="studio-shell">
-    <header className="studio-header">
-      <a className="wordmark" href="#studio" aria-label="Voice the Line home"><span className="wordmark-mark">V</span><span className="wordmark-name">VOICE THE LINE</span><b>CUE STUDIO</b></a>
+      <header className="studio-header">
+      <h1 className="wordmark"><a href="#studio" title="Voice the Line studio" aria-label="Voice the Line home"><span className="wordmark-mark">V</span><span className="wordmark-name">VOICE THE LINE</span><b>CUE STUDIO</b></a></h1>
       <div className="header-center"><span className="status-light" /> Eight original scenes <span className="header-rule" /> Recorded locally</div>
       <div className="header-actions"><button className="header-icon" onClick={() => setMuted((value) => !value)} title={muted ? "Turn sound on" : "Turn sound off"} aria-label={muted ? "Turn sound on" : "Turn sound off"}>{muted ? <X size={17} /> : <Volume2 size={17} />}</button><button className="header-icon" title="Studio settings" aria-label="Studio settings"><SlidersHorizontal size={17} /></button></div>
     </header>
     <div className="studio-layout" id="studio">
       <aside className="scene-drawer" aria-label="Scene library">
         <div className="drawer-title"><span>Scene library</span><button title="More scene options" aria-label="More scene options"><MoreHorizontal size={18} /></button></div><p className="drawer-subtitle">Original scenes for a clean take.</p>
-        <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => { trackEvent("select_scene", { scene_name: item.title, scene_index: index + 1 }); setSceneIndex(index); }}><Image src={item.image} alt="" fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
-        <a className="drawer-guide-link" href="/voice-over-game/">Read the voice over game guide <span aria-hidden="true">-&gt;</span></a>
+        <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => { trackEvent("select_scene", { scene_name: item.title, scene_index: index + 1 }); setSceneIndex(index); }}><Image src={item.image} alt={`${item.title} voice over scene thumbnail`} fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
+        <a className="drawer-guide-link" href="/voice-over-game/" title="Read the voice over game guide">Read the voice over game guide <span aria-hidden="true">-&gt;</span></a>
         <div className="drawer-note"><Headphones size={16} /><span>Headphones recommended</span></div>
       </aside>
       <section className="monitor-area">
@@ -154,27 +183,35 @@ export default function Home() {
       <div className="seo-content-inner">
         <div className="seo-lede">
           <span className="section-kicker">Voice acting practice</span>
-          <h1 id="about-title">Voice the Line: a free online voice over game</h1>
+          <h2 id="about-title">Voice the Line: a free online voice over game</h2>
           <p>Voice the Line is a free online voice over game built around short, original cinematic scenes. Pick a moment, follow the cue, and give the character a voice that feels like your own.</p>
+          <p className="content-byline">Created by <a href={siteOwner.profileUrl} title="Joan Jiao on GitHub">{siteOwner.name}</a> - Updated <time dateTime="2026-09-04">September 4, 2026</time></p>
         </div>
         <div className="seo-points">
           <article><span>01</span><h3>Choose a scene</h3><p>Move between drama, mystery, comedy, fantasy, and science fiction scenes in one focused studio.</p></article>
           <article><span>02</span><h3>Catch the cue</h3><p>Timed dialogue keeps the performance moving while the active line stays visible on the monitor.</p></article>
           <article><span>03</span><h3>Keep the take</h3><p>Record in your browser, listen back, try again, and export your finished take locally.</p></article>
         </div>
-        <div className="seo-scene-heading"><div><span className="section-kicker">Original scene library</span><h2>Pick your next voice over scene</h2></div><a className="text-link" href="/voice-over-game/">See how the game works <span aria-hidden="true">-&gt;</span></a></div>
-        <div className="seo-scene-grid">{scenes.map((item) => <a className="seo-scene-link" href={`/scenes/${item.slug}/`} key={item.slug}><Image src={item.image} alt={`${item.title} voice over scene`} width={420} height={236} /><span><strong>{item.title}</strong><small>{item.genre} / {formatTime(item.duration)}</small></span></a>)}</div>
+        <div className="seo-scene-heading"><div><span className="section-kicker">Original scene library</span><h2>Which voice over scene should you try next?</h2></div><a className="text-link" href="/voice-over-game/" title="Learn how the voice over game works">See how the game works <span aria-hidden="true">-&gt;</span></a></div>
+        <div className="seo-scene-grid">{scenes.map((item) => <a className="seo-scene-link" href={`/scenes/${item.slug}/`} title={`Open the ${item.title} voice over scene`} key={item.slug}><Image src={item.image} alt={`${item.title} voice over scene`} width={420} height={236} /><span><strong>{item.title}</strong><small>{item.genre} / {formatTime(item.duration)}</small></span></a>)}</div>
       </div>
     </section>
     <section className="faq-section" aria-labelledby="faq-title">
       <div className="faq-inner">
-        <div><span className="section-kicker">Common questions</span><h2 id="faq-title">Voice over game FAQ</h2></div>
+        <div><span className="section-kicker">Common questions</span><h2 id="faq-title">What do players ask about voice over games?</h2></div>
         <div className="faq-list">{faqItems.map((item) => <details key={item.question}><summary>{item.question}</summary><p>{item.answer}</p></details>)}</div>
+      </div>
+    </section>
+    <section className="sources-section" aria-labelledby="sources-title">
+      <div className="sources-inner">
+        <div><span className="section-kicker">Sources and ownership</span><h2 id="sources-title">How does browser voice recording work?</h2></div>
+        <blockquote cite="https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder">The browser MediaRecorder API can record media from a user agent and produce data in a format that can be saved or played back.</blockquote>
+        <p className="source-copy">Voice the Line uses browser recording APIs and keeps takes local to the session. Technical references: <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder" title="MDN MediaRecorder API reference">MDN MediaRecorder API</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia" title="MDN getUserMedia API reference">MDN getUserMedia API</a>. Questions and feedback can be sent through the <a href={siteOwner.contactUrl} title="Voice the Line GitHub contact and issues">project issue tracker</a>.</p>
       </div>
     </section>
     <footer className="site-footer">
       <div><strong>VOICE THE LINE</strong><span>Original scenes for your next take.</span></div>
-      <nav aria-label="Footer navigation"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>
+      <nav aria-label="Footer navigation"><a href="#about-title" title="About Voice the Line">About</a><a href={siteOwner.contactUrl} title="Contact Voice the Line on GitHub">Contact</a><a href="/privacy" title="Read the Voice the Line privacy policy">Privacy</a><a href="/terms" title="Read the Voice the Line terms">Terms</a></nav>
     </footer>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replaceAll("<", "\\u003c") }} />
   </main>;
