@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:itch": "powershell -NoProfile -Command \"$env:NEXT_PUBLIC_ITCH_BUILD='true'; & .\\node_modules\\.bin\\next.cmd build\"",
     "start": "next start"
   },
   "dependencies": {

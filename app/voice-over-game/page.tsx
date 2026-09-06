@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { scenes } from "../../lib/scenes";
+import { assetPath } from "../../lib/asset-path";
 
 const siteUrl = "https://voicetheline.live";
 const title = "Voice Over Game: Play Free Online | Voice the Line";
@@ -97,7 +98,7 @@ export default function VoiceOverGameGuide() {
           <p className="content-byline">Created by <a href="https://github.com/joanjiaocn-rgb" title="Joan Jiao on GitHub">Joan Jiao</a> - Updated <time dateTime="2026-09-04">September 4, 2026</time></p>
           <div className="content-actions"><a className="content-button primary" href="/#studio" title="Play Voice the Line online">Play online</a><a className="content-button secondary" href="#scene-library" title="Browse voice over scenes">Browse scenes</a></div>
         </div>
-        <div className="content-hero-media"><Image src="/scenes/last-train-home.png" alt="A cinematic train platform scene ready for voice over practice" fill priority sizes="(max-width: 820px) 100vw, 50vw" /></div>
+        <div className="content-hero-media"><Image src={assetPath("/scenes/last-train-home.png")} alt="A cinematic train platform scene ready for voice over practice" fill priority sizes="(max-width: 820px) 100vw, 50vw" /></div>
       </section>
 
       <div className="content-facts" aria-label="Voice the Line highlights"><div><strong>8</strong><span>original scenes</span></div><div><strong>0</strong><span>accounts required</span></div><div><strong>Local</strong><span>recording workflow</span></div><div><strong>WebM</strong><span>take export</span></div></div>
@@ -109,7 +110,7 @@ export default function VoiceOverGameGuide() {
 
       <section className="guide-section guide-section-alt" id="scene-library" aria-labelledby="scene-library-title">
         <div className="guide-section-heading guide-section-heading-row"><div><span className="section-kicker">Original scene library</span><h2 id="scene-library-title">Find a scene that fits your voice</h2><p>Each scene is short enough for a quick take and specific enough to give you something to play.</p></div><a className="text-link" href="/#studio" title="Open the Voice the Line studio">Open the studio <span aria-hidden="true">-&gt;</span></a></div>
-        <div className="guide-scene-grid">{scenes.map((scene) => <a className="guide-scene-card" href={`/scenes/${scene.slug}/`} title={`Open the ${scene.title} voice over scene`} key={scene.slug}><div className="guide-scene-image"><Image src={scene.image} alt={`${scene.title} voice over scene`} fill sizes="(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 25vw" /></div><div className="guide-scene-copy"><span>{scene.genre}</span><strong>{scene.title}</strong><small>{scene.duration} seconds / View scene details -&gt;</small></div></a>)}</div>
+        <div className="guide-scene-grid">{scenes.map((scene) => <a className="guide-scene-card" href={`/scenes/${scene.slug}/`} title={`Open the ${scene.title} voice over scene`} key={scene.slug}><div className="guide-scene-image"><Image src={assetPath(scene.image)} alt={`${scene.title} voice over scene`} fill sizes="(max-width: 640px) 100vw, (max-width: 1000px) 50vw, 25vw" /></div><div className="guide-scene-copy"><span>{scene.genre}</span><strong>{scene.title}</strong><small>{scene.duration} seconds / View scene details -&gt;</small></div></a>)}</div>
       </section>
 
       <section className="guide-section guide-faq" aria-labelledby="guide-faq-title">

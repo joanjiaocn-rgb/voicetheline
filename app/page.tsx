@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Check, ChevronLeft, ChevronRight, Download, Headphones, Keyboard, Mic, MoreHorizontal, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Download, Headphones, Instagram, Keyboard, Mic, MoreHorizontal, Music2, Pause, Play, RotateCcw, Share2, SlidersHorizontal, Twitter, Volume2, X } from "lucide-react";
 import { scenes } from "../lib/scenes";
 import { trackEvent } from "../lib/analytics";
+import { assetPath } from "../lib/asset-path";
 
 type FaqItem = { question: string; answer: string };
 
@@ -87,11 +88,17 @@ export default function Home() {
   const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [take, setTake] = useState(1);
+  const [shareOpen, setShareOpen] = useState<"header" | "scene" | null>(null);
+  const [shareFeedback, setShareFeedback] = useState("");
+  const [takeShareFeedback, setTakeShareFeedback] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recordingBlobRef = useRef<Blob | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const scene = scenes[sceneIndex];
+  const shareUrl = `https://voicetheline.live/?scene=${encodeURIComponent(scene.slug)}&utm_source=social&utm_medium=share&utm_campaign=scene_share`;
+  const shareText = `Give ${scene.title} your voice in Voice the Line.`;
 
   useEffect(() => {
     const requestedSlug = new URLSearchParams(window.location.search).get("scene");
@@ -136,14 +143,66 @@ export default function Home() {
       recorder.ondataavailable = (event) => event.data.size && chunksRef.current.push(event.data);
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        recordingBlobRef.current = blob;
         setRecordingUrl(URL.createObjectURL(blob)); stream.getTracks().forEach((track) => track.stop()); setRecordingStatus("done");
       };
       recorder.start(); trackEvent("start_recording", { scene_name: scene.title }); setRecording(true); setRecordingStatus("recording"); setPlayhead(0); setIsPlaying(true);
     } catch { setRecordingStatus("error"); }
   };
 
-  const resetTake = () => { stopRecording(); setIsPlaying(false); setPlayhead(0); if (recordingUrl) URL.revokeObjectURL(recordingUrl); setRecordingUrl(null); setRecordingStatus("idle"); setTake((value) => value + 1); };
-  const downloadTake = () => { if (!recordingUrl) return; trackEvent("export_take", { scene_name: scene.title, take_number: take }); const link = document.createElement("a"); link.href = recordingUrl; link.download = `cue-${scene.title.toLowerCase().replaceAll(" ", "-")}-take-${take}.webm`; link.click(); };
+  const takeFilename = `cue-${scene.title.toLowerCase().replaceAll(" ", "-")}-take-${take}.webm`;
+  const resetTake = () => { stopRecording(); setIsPlaying(false); setPlayhead(0); if (recordingUrl) URL.revokeObjectURL(recordingUrl); recordingBlobRef.current = null; setRecordingUrl(null); setRecordingStatus("idle"); setTakeShareFeedback(""); setTake((value) => value + 1); };
+  const downloadTake = () => { if (!recordingUrl) return; trackEvent("export_take", { scene_name: scene.title, take_number: take }); const link = document.createElement("a"); link.href = recordingUrl; link.download = takeFilename; link.click(); };
+  const shareTake = async () => {
+    const blob = recordingBlobRef.current;
+    if (!blob) return;
+    const file = new File([blob], takeFilename, { type: blob.type || "audio/webm" });
+    const canShareFile = typeof navigator.share === "function" && (!navigator.canShare || navigator.canShare({ files: [file] }));
+    if (canShareFile) {
+      try {
+        await navigator.share({ title: `${scene.title} - Voice the Line`, text: "My voice take from Voice the Line.", files: [file] });
+        trackEvent("share", { content_type: "recording", item_name: scene.title, method: "native_file_share" });
+        setTakeShareFeedback("Shared");
+      } catch (error) {
+        if ((error as DOMException).name !== "AbortError") setTakeShareFeedback("Share unavailable");
+      }
+      return;
+    }
+    downloadTake();
+    setTakeShareFeedback("Downloaded - upload it to share");
+    trackEvent("share", { content_type: "recording", item_name: scene.title, method: "download_for_share" });
+  };
+  const copyShareLink = async (channel: "copy_link" | "instagram" | "tiktok") => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      const input = document.createElement("textarea");
+      input.value = shareUrl;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.append(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+    trackEvent("share", { content_type: "scene", item_name: scene.title, method: channel });
+    setShareFeedback("Link copied");
+  };
+  const shareNatively = async () => {
+    if (!navigator.share) { return; }
+    try {
+      await navigator.share({ title: "Voice the Line", text: shareText, url: shareUrl });
+      trackEvent("share", { content_type: "scene", item_name: scene.title, method: "native_share" });
+      setShareOpen(null);
+    } catch (error) {
+      if ((error as DOMException).name !== "AbortError") setShareOpen((value) => value ?? "header");
+    }
+  };
+  const openSocialProfile = (channel: "instagram" | "tiktok") => {
+    window.open(channel === "instagram" ? "https://www.instagram.com/" : "https://www.tiktok.com/", "_blank", "noopener,noreferrer");
+    void copyShareLink(channel);
+  };
+  const renderShareMenu = () => <div className="share-menu" role="dialog" aria-label="Share this scene"><div className="share-menu-heading"><span>Share {scene.title}</span><button onClick={() => setShareOpen(null)} aria-label="Close share menu"><X size={15} /></button></div><button className="share-action share-native" onClick={shareNatively}><Share2 size={16} /><span>Share with apps</span></button><a className="share-action" href={`https://x.com/intent/post?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" onClick={() => { trackEvent("share", { content_type: "scene", item_name: scene.title, method: "x" }); setShareOpen(null); }}><Twitter size={16} /><span>Post to X</span></a><button className="share-action" onClick={() => openSocialProfile("instagram")}><Instagram size={16} /><span>Instagram</span></button><button className="share-action" onClick={() => openSocialProfile("tiktok")}><Music2 size={16} /><span>TikTok</span></button><button className="share-action" onClick={() => void copyShareLink("copy_link")}><Copy size={16} /><span>{shareFeedback || "Copy link"}</span></button><p>Instagram and TikTok open with the scene link copied for your post or bio.</p></div>;
   const activeLine = scene.lines.reduce((current, line, index) => playhead >= line.time ? index : current, -1);
   const upcomingLine = scene.lines[Math.min(activeLine + 1, scene.lines.length - 1)];
   const progress = (playhead / scene.duration) * 100;
@@ -153,29 +212,29 @@ export default function Home() {
       <header className="studio-header">
       <h1 className="wordmark"><a href="#studio" title="Voice the Line studio" aria-label="Voice the Line home"><span className="wordmark-mark">V</span><span className="wordmark-name">VOICE THE LINE</span><b>CUE STUDIO</b></a></h1>
       <div className="header-center"><span className="status-light" /> Eight original scenes <span className="header-rule" /> Recorded locally</div>
-      <div className="header-actions"><button className="header-icon" onClick={() => setMuted((value) => !value)} title={muted ? "Turn sound on" : "Turn sound off"} aria-label={muted ? "Turn sound on" : "Turn sound off"}>{muted ? <X size={17} /> : <Volume2 size={17} />}</button><button className="header-icon" title="Studio settings" aria-label="Studio settings"><SlidersHorizontal size={17} /></button></div>
+      <div className="header-actions"><button className="header-icon" onClick={() => setMuted((value) => !value)} title={muted ? "Turn sound on" : "Turn sound off"} aria-label={muted ? "Turn sound on" : "Turn sound off"}>{muted ? <X size={17} /> : <Volume2 size={17} />}</button><div className="share-control"><button className="header-icon share-trigger" onClick={() => setShareOpen((value) => value === "header" ? null : "header")} title="Share this scene" aria-label="Share this scene" aria-haspopup="dialog" aria-expanded={shareOpen === "header"}><Share2 size={16} /><span>Share</span></button>{shareOpen === "header" && renderShareMenu()}</div><button className="header-icon" title="Studio settings" aria-label="Studio settings"><SlidersHorizontal size={17} /></button></div>
     </header>
     <div className="studio-layout" id="studio">
       <aside className="scene-drawer" aria-label="Scene library">
         <div className="drawer-title"><span>Scene library</span><button title="More scene options" aria-label="More scene options"><MoreHorizontal size={18} /></button></div><p className="drawer-subtitle">Original scenes for a clean take.</p>
-        <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => { trackEvent("select_scene", { scene_name: item.title, scene_index: index + 1 }); setSceneIndex(index); }}><Image src={item.image} alt={`${item.title} voice over scene thumbnail`} fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
+        <div className="scene-stack">{scenes.map((item, index) => <button key={item.title} className={`scene-card ${index === sceneIndex ? "active" : ""}`} onClick={() => { trackEvent("select_scene", { scene_name: item.title, scene_index: index + 1 }); setSceneIndex(index); }}><Image src={assetPath(item.image)} alt={`${item.title} voice over scene thumbnail`} fill sizes="248px" /><span className="scene-card-shade" /><span className="scene-number">{String(index + 1).padStart(2, "0")}</span><span className="scene-card-copy"><strong>{item.title}</strong><small>{item.genre}</small></span>{index === sceneIndex && <span className="selected-dot" />}</button>)}</div>
         <a className="drawer-guide-link" href="/voice-over-game/" title="Read the voice over game guide">Read the voice over game guide <span aria-hidden="true">-&gt;</span></a>
         <div className="drawer-note"><Headphones size={16} /><span>Headphones recommended</span></div>
       </aside>
       <section className="monitor-area">
         <div className="monitor-meta"><span>Scene {String(sceneIndex + 1).padStart(2, "0")} / {String(scenes.length).padStart(2, "0")}</span><span>{scene.genre}</span></div>
         <div className="cinema-frame">
-          <Image key={scene.image} className="scene-image" src={scene.image} alt={`${scene.title} scene`} fill priority={sceneIndex === 0} sizes="(max-width: 820px) 100vw, (max-width: 1140px) 55vw, 65vw" style={{ objectPosition: scene.positioning }} /><div className="cinema-glow" /><div className="safe-frame" aria-hidden="true"><i /><i /><i /><i /></div>
+          <Image key={scene.image} className="scene-image" src={assetPath(scene.image)} alt={`${scene.title} scene`} fill priority={sceneIndex === 0} sizes="(max-width: 820px) 100vw, (max-width: 1140px) 55vw, 65vw" style={{ objectPosition: scene.positioning }} /><div className="cinema-glow" /><div className="safe-frame" aria-hidden="true"><i /><i /><i /><i /></div>
           <div className="scene-id"><span>Original short</span><h2>{scene.title}</h2></div><div className="on-air"><span className={recording ? "pulse" : ""} /> {recording ? "REC" : "CUE"}</div>
           <div className="caption-block"><span>{activeLine >= 0 ? scene.lines[activeLine].speaker : "STANDBY"}</span><p>{activeLine >= 0 ? scene.lines[activeLine].text : "Press play, then give the scene your voice."}</p></div>
         </div>
-        <div className="transport"><button className="transport-play" onClick={togglePlayback} aria-label={isPlaying ? "Pause scene" : "Play scene"}>{isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}</button><span className="mono-time">{formatTime(playhead)}</span><div className="time-track"><input aria-label="Scene timeline" type="range" min="0" max={scene.duration} step="0.1" value={playhead} onChange={(event) => setPlayhead(Number(event.target.value))} style={{ "--timeline-progress": `${progress}%` } as React.CSSProperties} /><div className="time-markers"><span>00</span><span>05</span><span>10</span><span>15</span><span>20</span></div></div><span className="mono-time">{formatTime(scene.duration)}</span><button className="transport-reset" onClick={() => { setPlayhead(0); setIsPlaying(false); }} title="Restart scene" aria-label="Restart scene"><RotateCcw size={17} /></button></div>
+        <div className="transport"><button className="transport-play" onClick={togglePlayback} aria-label={isPlaying ? "Pause scene" : "Play scene"}>{isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}</button><span className="mono-time">{formatTime(playhead)}</span><div className="time-track"><input aria-label="Scene timeline" type="range" min="0" max={scene.duration} step="0.1" value={playhead} onChange={(event) => setPlayhead(Number(event.target.value))} style={{ "--timeline-progress": `${progress}%` } as React.CSSProperties} /><div className="time-markers"><span>00</span><span>05</span><span>10</span><span>15</span><span>20</span></div></div><span className="mono-time">{formatTime(scene.duration)}</span><button className="transport-reset" onClick={() => { setPlayhead(0); setIsPlaying(false); }} title="Restart scene" aria-label="Restart scene"><RotateCcw size={17} /></button></div><div className="scene-share-row"><div className="share-control"><button className="scene-share-button" onClick={() => setShareOpen((value) => value === "scene" ? null : "scene")} aria-haspopup="dialog" aria-expanded={shareOpen === "scene"}><Share2 size={16} /><span>Share this scene</span></button>{shareOpen === "scene" && renderShareMenu()}</div><span>Invite someone to take the next line.</span></div>
       </section>
       <aside className="direction-panel">
         <div className="direction-header"><div><span className="panel-kicker">Your direction</span><h2>Find the moment.</h2></div><button className="header-icon" title="Direction notes" aria-label="Direction notes"><Keyboard size={16} /></button></div>
         <div className="cue-now"><div className="cue-label-row"><span>Now cueing</span><time>{activeLine >= 0 ? formatTime(scene.lines[activeLine].time) : "00:00"}</time></div><strong>{activeLine >= 0 ? scene.lines[activeLine].speaker : "Get ready"}</strong><p>{activeLine >= 0 ? scene.lines[activeLine].text : "The first line lands in one second."}</p></div>
         <div className="script-list" aria-label="Script lines">{scene.lines.map((line, index) => <article key={`${line.speaker}-${line.time}`} className={`script-row ${activeLine === index ? "current" : ""} ${activeLine > index ? "complete" : ""}`}><time>{formatTime(line.time)}</time><div><span>{line.speaker}</span><p>{line.text}</p></div>{activeLine > index && <Check size={15} />}</article>)}</div>
-        <div className={`take-console ${recordingStatus}`}><div className="take-topline"><span className="take-status"><i /> {statusLabel}</span><span>Take {take}</span></div><div className="take-action-row">{recording ? <button className="record-control stop" onClick={stopRecording} aria-label="Stop recording"><i /></button> : <button className="record-control" onClick={startRecording} aria-label="Start recording"><Mic size={23} /></button>}<div className="take-copy"><strong>{recording ? "Keep your pace." : recordingStatus === "done" ? "That is a wrap." : "Start a clean take."}</strong><span>{recording ? "Recording to this device" : recordingStatus === "done" ? "Listen or export below" : `Next: ${upcomingLine.speaker}`}</span></div></div><div className="audio-strip" aria-hidden="true">{Array.from({ length: 15 }, (_, index) => <i key={index} />)}</div>{recordingUrl && <div className="take-finish"><audio ref={audioRef} src={recordingUrl} /><button onClick={() => audioRef.current?.play()}><Play size={15} fill="currentColor" /> Listen</button><button onClick={downloadTake}><Download size={15} /> Export</button></div>}<button className="new-take" onClick={resetTake}><RotateCcw size={14} /> New take</button></div>
+        <div className={`take-console ${recordingStatus}`}><div className="take-topline"><span className="take-status"><i /> {statusLabel}</span><span>Take {take}</span></div><div className="take-action-row">{recording ? <button className="record-control stop" onClick={stopRecording} aria-label="Stop recording"><i /></button> : <button className="record-control" onClick={startRecording} aria-label="Start recording"><Mic size={23} /></button>}<div className="take-copy"><strong>{recording ? "Keep your pace." : recordingStatus === "done" ? "That is a wrap." : "Start a clean take."}</strong><span>{recording ? "Recording to this device" : recordingStatus === "done" ? "Listen or share below" : `Next: ${upcomingLine.speaker}`}</span></div></div><div className="audio-strip" aria-hidden="true">{Array.from({ length: 15 }, (_, index) => <i key={index} />)}</div>{recordingUrl && <div className="take-finish"><audio ref={audioRef} src={recordingUrl} /><button onClick={() => audioRef.current?.play()}><Play size={15} fill="currentColor" /> Listen</button><button onClick={shareTake} className="take-share-button"><Share2 size={15} /> {takeShareFeedback || "Share take"}</button><button onClick={downloadTake}><Download size={15} /> Export</button></div>}<button className="new-take" onClick={resetTake}><RotateCcw size={14} /> New take</button></div>
       </aside>
     </div>
     <footer className="mobile-scene-nav"><button onClick={() => setSceneIndex((sceneIndex + scenes.length - 1) % scenes.length)} aria-label="Previous scene"><ChevronLeft size={19} /></button><span>Scene {sceneIndex + 1} of {scenes.length}</span><button onClick={() => setSceneIndex((sceneIndex + 1) % scenes.length)} aria-label="Next scene"><ChevronRight size={19} /></button></footer>
@@ -193,7 +252,7 @@ export default function Home() {
           <article><span>03</span><h3>Keep the take</h3><p>Record in your browser, listen back, try again, and export your finished take locally.</p></article>
         </div>
         <div className="seo-scene-heading"><div><span className="section-kicker">Original scene library</span><h2>Which voice over scene should you try next?</h2></div><a className="text-link" href="/voice-over-game/" title="Learn how the voice over game works">See how the game works <span aria-hidden="true">-&gt;</span></a></div>
-        <div className="seo-scene-grid">{scenes.map((item) => <a className="seo-scene-link" href={`/scenes/${item.slug}/`} title={`Open the ${item.title} voice over scene`} key={item.slug}><Image src={item.image} alt={`${item.title} voice over scene`} width={420} height={236} /><span><strong>{item.title}</strong><small>{item.genre} / {formatTime(item.duration)}</small></span></a>)}</div>
+        <div className="seo-scene-grid">{scenes.map((item) => <a className="seo-scene-link" href={`/scenes/${item.slug}/`} title={`Open the ${item.title} voice over scene`} key={item.slug}><Image src={assetPath(item.image)} alt={`${item.title} voice over scene`} width={420} height={236} /><span><strong>{item.title}</strong><small>{item.genre} / {formatTime(item.duration)}</small></span></a>)}</div>
       </div>
     </section>
     <section className="faq-section" aria-labelledby="faq-title">
